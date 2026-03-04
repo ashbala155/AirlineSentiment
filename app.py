@@ -83,7 +83,6 @@ if not st.sidebar.checkbox("Hide sentiment chart", False):
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
-        title_font=dict(family="Montserrat", size=20, color="#1f77b4")
     )
     st.plotly_chart(fig)
 
@@ -119,7 +118,6 @@ if not st.sidebar.checkbox("Close airline chart", False, key='airline_checkbox')
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
-        title_font=dict(family="Montserrat", size=20, color="#1f77b4")
     )
     st.plotly_chart(fig_air)
 
