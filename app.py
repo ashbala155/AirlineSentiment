@@ -103,55 +103,49 @@ if not st.sidebar.checkbox("Hide Airline Plot", False, key='airline_hide'):
     st.plotly_chart(fig_air)
 
 # -----------------------------
-# BREAKDOWN BY SENTIMENT PER AIRLINE (FIXED)
+# BREAKDOWN BY SENTIMENT PER AIRLINE (ROBUST)
 # -----------------------------
-def plot_sentiment_per_airline(airline, df):
-    df_air = df[df['airline'] == airline]
-    if df_air.empty:
-        return pd.DataFrame({'Sentiment':[], 'Tweets':[]})
-    count = df_air['airline_sentiment'].value_counts()
-    return pd.DataFrame({'Sentiment': count.index, 'Tweets': count.values.flatten()})
-
 st.sidebar.subheader("Breakdown airline by sentiment")
 selected_airlines = st.sidebar.multiselect(
-    'Pick airlines', simulated_data['airline'].unique()
+    "Pick airlines", simulated_data['airline'].unique()
 )
+
+def get_sentiment_counts(df, airline):
+    df_air = df[df['airline'] == airline]
+    if df_air.empty:
+        return pd.DataFrame({'Sentiment': ['none'], 'Tweets': [0], 'Airline': [airline]})
+    counts = df_air['airline_sentiment'].value_counts().reset_index()
+    counts.columns = ['Sentiment', 'Tweets']
+    counts['Airline'] = airline
+    return counts
 
 if selected_airlines:
     st.subheader("Breakdown by sentiment")
     breakdown_type = st.sidebar.selectbox('Visualization type', ['Bar plot', 'Pie chart'], key='breakdown_viz')
 
-    if breakdown_type == 'Bar plot':
-        # For bar plots, we can combine into a single grouped bar chart
-        bar_df = pd.DataFrame()
-        for airline in selected_airlines:
-            temp = plot_sentiment_per_airline(airline, simulated_data)
-            temp['Airline'] = airline
-            bar_df = pd.concat([bar_df, temp], ignore_index=True)
-        if not bar_df.empty:
-            fig_bar = px.bar(bar_df, x='Sentiment', y='Tweets', color='Airline', barmode='group', height=500)
-            st.plotly_chart(fig_bar)
-        else:
-            st.info("No data for selected airlines.")
+    # Combine data for selected airlines
+    plot_df = pd.concat([get_sentiment_counts(simulated_data, airline) for airline in selected_airlines], ignore_index=True)
 
-    else:  # Pie chart
-        # Pie charts per airline using subplots
+    if breakdown_type == 'Bar plot':
+        fig = px.bar(plot_df, x='Sentiment', y='Tweets', color='Airline', barmode='group', height=500)
+        st.plotly_chart(fig)
+    else:
+        # Pie charts per airline
         from plotly.subplots import make_subplots
         import plotly.graph_objects as go
 
         specs = [[{'type':'domain'}]*len(selected_airlines)]
-        fig_pie = make_subplots(rows=1, cols=len(selected_airlines), specs=specs, subplot_titles=selected_airlines)
+        fig = make_subplots(rows=1, cols=len(selected_airlines), specs=specs, subplot_titles=selected_airlines)
 
         for i, airline in enumerate(selected_airlines):
-            temp = plot_sentiment_per_airline(airline, simulated_data)
-            if temp.empty:
-                temp = pd.DataFrame({'Sentiment':['none'], 'Tweets':[0]})
-            fig_pie.add_trace(
-                go.Pie(labels=temp['Sentiment'], values=temp['Tweets'], showlegend=(i==0)),
+            df_air = plot_df[plot_df['Airline'] == airline]
+            fig.add_trace(
+                go.Pie(labels=df_air['Sentiment'], values=df_air['Tweets'], showlegend=(i==0)),
                 row=1, col=i+1
             )
-        fig_pie.update_layout(height=500, width=300*len(selected_airlines))
-        st.plotly_chart(fig_pie)
+
+        fig.update_layout(height=500, width=300*len(selected_airlines))
+        st.plotly_chart(fig)
 
 # -----------------------------
 # WORD CLOUD
