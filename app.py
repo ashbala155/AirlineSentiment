@@ -180,8 +180,7 @@ if selected_airlines:
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
-        title_text="Comparison of Sentiment per Selected Airline",
-        title_font=dict(family="Montserrat", size=20, color="#1f77b4")
+        )
     )
     st.plotly_chart(fig_hist)
 
