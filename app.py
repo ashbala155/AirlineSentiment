@@ -174,7 +174,8 @@ if selected_airlines:
         histfunc='count', color='airline_sentiment',
         facet_col='airline_sentiment', labels={'airline_sentiment':'Tweets'},
         height=600, width=800,
-        color_discrete_map=color_map
+        color_discrete_map=color_map,
+        subplot_titles=selected_airlines
     )
     fig_hist.update_layout(
         paper_bgcolor='white',
