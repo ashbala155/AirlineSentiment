@@ -1,128 +1,228 @@
+import os
+import re
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
+import tweepy
 
 
-DATA_URL = (
-    "Tweets.csv"
+# ---------------------------------------------------
+# CONFIG
+# ---------------------------------------------------
+
+st.set_page_config(
+    page_title="Real-Time Airline Sentiment Dashboard",
+    page_icon="✈️",
+    layout="wide"
 )
 
-st.title("Sentiment Analysis of Tweets about US Airlines")
-st.sidebar.title("Sentiment Analysis of Tweets")
-st.markdown("This application is a Streamlit dashboard used "
-            "to analyze sentiments of tweets 🐦")
-st.sidebar.markdown("This application is a Streamlit dashboard used "
-            "to analyze sentiments of tweets 🐦")
+BEARER_TOKEN = st.secrets["TWITTER_BEARER_TOKEN"]
 
-@st.cache(persist=True)
-def load_data():
-    data = pd.read_csv(DATA_URL)
-    data['tweet_created'] = pd.to_datetime(data['tweet_created'])
-    return data
+if not BEARER_TOKEN:
+    st.error("Twitter Bearer Token not found. Add it to your .env file.")
+    st.stop()
 
-data = load_data()
+client = tweepy.Client(bearer_token=BEARER_TOKEN)
 
-st.sidebar.subheader("Show random tweet")
-random_tweet = st.sidebar.radio('Sentiment', ('positive', 'neutral', 'negative'))
-st.sidebar.markdown(data.query("airline_sentiment == @random_tweet")[["text"]].sample(n=1).iat[0, 0])
+# ---------------------------------------------------
+# SIMPLE SENTIMENT LEXICON
+# ---------------------------------------------------
 
-st.sidebar.markdown("### Number of tweets by sentiment")
-select = st.sidebar.selectbox('Visualization type', ['Bar plot', 'Pie chart'], key='1')
-sentiment_count = data['airline_sentiment'].value_counts()
-sentiment_count = pd.DataFrame({'Sentiment':sentiment_count.index, 'Tweets':sentiment_count.values})
-if not st.sidebar.checkbox("Hide", False):
-    st.markdown("### Number of tweets by sentiment")
-    if select == 'Bar plot':
-        fig = px.bar(sentiment_count, x='Sentiment', y='Tweets', color='Tweets', height=500)
-        st.plotly_chart(fig)
+POSITIVE_WORDS = {
+    "good", "great", "excellent", "love", "amazing", "happy",
+    "awesome", "smooth", "fantastic", "nice", "friendly"
+}
+
+NEGATIVE_WORDS = {
+    "bad", "terrible", "worst", "hate", "awful", "delay",
+    "late", "cancelled", "angry", "poor", "rude"
+}
+
+# ---------------------------------------------------
+# FUNCTIONS
+# ---------------------------------------------------
+
+@st.cache_data(ttl=300)
+def fetch_tweets(query: str, max_results: int = 100):
+    """Fetch recent tweets from Twitter API."""
+    try:
+        response = client.search_recent_tweets(
+            query=f"{query} -is:retweet lang:en",
+            max_results=max_results,
+            tweet_fields=["created_at"]
+        )
+
+        if response.data is None:
+            return pd.DataFrame(columns=["text", "created_at"])
+
+        tweets = [
+            {
+                "text": tweet.text,
+                "created_at": tweet.created_at
+            }
+            for tweet in response.data
+        ]
+
+        df = pd.DataFrame(tweets)
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        return df
+
+    except Exception as e:
+        st.error(f"Error fetching tweets: {e}")
+        return pd.DataFrame(columns=["text", "created_at"])
+
+
+def clean_text(text: str) -> str:
+    """Basic tweet cleaning."""
+    text = re.sub(r"http\S+", "", text)  # remove URLs
+    text = re.sub(r"@\w+", "", text)     # remove mentions
+    text = re.sub(r"#", "", text)        # remove hashtag symbol
+    text = re.sub(r"[^A-Za-z\s]", "", text)
+    return text.lower()
+
+
+def analyze_sentiment(text: str) -> str:
+    """Simple rule-based sentiment scoring."""
+    text = clean_text(text)
+    words = text.split()
+
+    pos_count = sum(word in POSITIVE_WORDS for word in words)
+    neg_count = sum(word in NEGATIVE_WORDS for word in words)
+
+    if pos_count > neg_count:
+        return "positive"
+    elif neg_count > pos_count:
+        return "negative"
     else:
-        fig = px.pie(sentiment_count, values='Tweets', names='Sentiment')
-        st.plotly_chart(fig)
-
-st.sidebar.subheader("When and where are users tweeting from?")
-hour = st.sidebar.slider("Hour to look at", 0, 23)
-modified_data = data[data['tweet_created'].dt.hour == hour]
-if not st.sidebar.checkbox("Close", False, key='close_checkbox_1'):
-    st.markdown("### Tweet locations based on time of day")
-    st.markdown("%i tweets between %i:00 and %i:00" % (len(modified_data), hour, (hour + 1) % 24))
-    st.map(modified_data)
-    if st.sidebar.checkbox("Show raw data", False):
-        st.write(modified_data)
+        return "neutral"
 
 
-st.sidebar.subheader("Total number of tweets for each airline")
-each_airline = st.sidebar.selectbox('Visualization type', ['Bar plot', 'Pie chart'], key='select_airline_viz')
-airline_sentiment_count = data.groupby('airline')['airline_sentiment'].count().sort_values(ascending=False)
-airline_sentiment_count = pd.DataFrame({'Airline':airline_sentiment_count.index, 'Tweets':airline_sentiment_count.values.flatten()})
-if not st.sidebar.checkbox("Close", False, key='close_checkbox_2'):
-    if each_airline == 'Bar plot':
-        st.subheader("Total number of tweets for each airline")
-        fig_1 = px.bar(airline_sentiment_count, x='Airline', y='Tweets', color='Tweets', height=500)
-        st.plotly_chart(fig_1)
-    if each_airline == 'Pie chart':
-        st.subheader("Total number of tweets for each airline")
-        fig_2 = px.pie(airline_sentiment_count, values='Tweets', names='Airline')
-        st.plotly_chart(fig_2)
+def generate_wordcloud(text_series):
+    text = " ".join(text_series)
+    wordcloud = WordCloud(
+        width=800,
+        height=400,
+        stopwords=STOPWORDS,
+        background_color="white"
+    ).generate(text)
+
+    fig, ax = plt.subplots()
+    ax.imshow(wordcloud, interpolation="bilinear")
+    ax.axis("off")
+    return fig
 
 
-@st.cache(persist=True)
-def plot_sentiment(airline):
-    df = data[data['airline']==airline]
-    count = df['airline_sentiment'].value_counts()
-    count = pd.DataFrame({'Sentiment':count.index, 'Tweets':count.values.flatten()})
-    return count
+# ---------------------------------------------------
+# SIDEBAR
+# ---------------------------------------------------
 
+st.sidebar.title("Controls")
 
-st.sidebar.subheader("Breakdown airline by sentiment")
-choice = st.sidebar.multiselect('Pick airlines', ('US Airways','United','American','Southwest','Delta','Virgin America'))
-if len(choice) > 0:
-    st.subheader("Breakdown airline by sentiment")
-    breakdown_type = st.sidebar.selectbox('Visualization type', ['Pie chart', 'Bar plot', ], key='3')
-    fig_3 = make_subplots(rows=1, cols=len(choice), subplot_titles=choice)
-    if breakdown_type == 'Bar plot':
-        for i in range(1):
-            for j in range(len(choice)):
-                fig_3.add_trace(
-                    go.Bar(x=plot_sentiment(choice[j]).Sentiment, y=plot_sentiment(choice[j]).Tweets, showlegend=False),
-                    row=i+1, col=j+1
-                )
-        fig_3.update_layout(height=600, width=800)
-        st.plotly_chart(fig_3)
-    else:
-        fig_3 = make_subplots(rows=1, cols=len(choice), specs=[[{'type':'domain'}]*len(choice)], subplot_titles=choice)
-        for i in range(1):
-            for j in range(len(choice)):
-                fig_3.add_trace(
-                    go.Pie(labels=plot_sentiment(choice[j]).Sentiment, values=plot_sentiment(choice[j]).Tweets, showlegend=True),
-                    i+1, j+1
-                )
-        fig_3.update_layout(height=600, width=800)
-        st.plotly_chart(fig_3)
-st.sidebar.subheader("Breakdown airline by sentiment")
-choice = st.sidebar.multiselect('Pick airlines', ('US Airways','United','American','Southwest','Delta','Virgin America'), key='breakdown_airlines')
-if len(choice) > 0:
-    choice_data = data[data.airline.isin(choice)]
-    fig_0 = px.histogram(
-                        choice_data, x='airline', y='airline_sentiment',
-                         histfunc='count', color='airline_sentiment',
-                         facet_col='airline_sentiment', labels={'airline_sentiment':'tweets'},
-                          height=600, width=800)
-    st.plotly_chart(fig_0)
+search_query = st.sidebar.text_input(
+    "Search Keyword",
+    value="US Airlines"
+)
 
-st.sidebar.header("Word Cloud")
-word_sentiment = st.sidebar.radio('Display word cloud for what sentiment?', ('positive', 'neutral', 'negative'))
-if not st.sidebar.checkbox("Close", False, key='close_checkbox_3'):
-    st.subheader('Word cloud for %s sentiment' % (word_sentiment))
-    df = data[data['airline_sentiment']==word_sentiment]
-    words = ' '.join(df['text'])
-    processed_words = ' '.join([word for word in words.split() if 'http' not in word and not word.startswith('@') and word != 'RT'])
-    wordcloud = WordCloud(stopwords=STOPWORDS, background_color='white', width=800, height=640).generate(processed_words)
-    plt.imshow(wordcloud)
-    plt.xticks([])
-    plt.yticks([])
-    st.pyplot()
+max_tweets = st.sidebar.slider(
+    "Number of Tweets",
+    min_value=10,
+    max_value=100,
+    value=50
+)
+
+refresh_button = st.sidebar.button("🔄 Refresh Data")
+
+# ---------------------------------------------------
+# MAIN APP
+# ---------------------------------------------------
+
+st.title("✈️ Real-Time Airline Sentiment Analysis")
+st.markdown("Live Twitter dashboard with custom sentiment analysis.")
+
+if refresh_button:
+    st.cache_data.clear()
+
+with st.spinner("Fetching live tweets..."):
+    data = fetch_tweets(search_query, max_tweets)
+
+if data.empty:
+    st.warning("No tweets found.")
+    st.stop()
+
+data["sentiment"] = data["text"].apply(analyze_sentiment)
+
+# ---------------------------------------------------
+# METRICS
+# ---------------------------------------------------
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total Tweets", len(data))
+col2.metric("Positive", (data["sentiment"] == "positive").sum())
+col3.metric("Negative", (data["sentiment"] == "negative").sum())
+
+# ---------------------------------------------------
+# SENTIMENT DISTRIBUTION
+# ---------------------------------------------------
+
+st.subheader("Sentiment Distribution")
+
+sentiment_counts = data["sentiment"].value_counts().reset_index()
+sentiment_counts.columns = ["Sentiment", "Count"]
+
+fig_bar = px.bar(
+    sentiment_counts,
+    x="Sentiment",
+    y="Count",
+    color="Sentiment",
+    title="Sentiment Breakdown"
+)
+
+st.plotly_chart(fig_bar, use_container_width=True)
+
+# ---------------------------------------------------
+# TIME DISTRIBUTION
+# ---------------------------------------------------
+
+st.subheader("Tweet Activity Over Time")
+
+data["hour"] = data["created_at"].dt.hour
+time_dist = data.groupby("hour").size().reset_index(name="count")
+
+fig_time = px.line(
+    time_dist,
+    x="hour",
+    y="count",
+    markers=True,
+    title="Tweets by Hour"
+)
+
+st.plotly_chart(fig_time, use_container_width=True)
+
+# ---------------------------------------------------
+# WORD CLOUD
+# ---------------------------------------------------
+
+st.subheader("Word Cloud by Sentiment")
+
+selected_sentiment = st.selectbox(
+    "Choose Sentiment",
+    ["positive", "neutral", "negative"]
+)
+
+filtered_text = data[data["sentiment"] == selected_sentiment]["text"]
+
+if not filtered_text.empty:
+    fig_wc = generate_wordcloud(filtered_text)
+    st.pyplot(fig_wc)
+else:
+    st.info("No tweets for selected sentiment.")
+
+# ---------------------------------------------------
+# RAW DATA
+# ---------------------------------------------------
+
+with st.expander("View Raw Data"):
+    st.dataframe(data)
