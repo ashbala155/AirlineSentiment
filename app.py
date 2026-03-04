@@ -63,7 +63,7 @@ data = load_data()
 
 # ------------------- Page title -------------------
 #st.title("✈️ Sentiment Analysis of Tweets about US Airlines")
-st.markdown('<h1 style="color:#d62728 !important;">✈️ Sentiment Analysis of Tweets about US Airlines</h1>', unsafe_allow_html=True)
+st.markdown("<h1 style='color: red;'>✈️ Sentiment Analysis of Tweets about US Airlines</h1>", unsafe_allow_html=True)
 st.sidebar.title("Sentiment Dashboard")
 st.markdown("Analyze sentiments of tweets with interactive charts and word clouds 🐦")
 st.sidebar.markdown("Interactive dashboard to explore airline tweet sentiments.")
