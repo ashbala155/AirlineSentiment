@@ -34,16 +34,18 @@ NEGATIVE_WORDS = {
 @st.cache_data(ttl=300)
 def fetch_reddit_pushshift(subreddit: str, query: str, size: int = 50):
     """Fetch recent Reddit posts using Pushshift API."""
-    url = f"https://api.pushshift.io/reddit/search/submission/"
+    url = "https://api.pushshift.io/reddit/search/submission/"
     params = {
         "subreddit": subreddit,
         "q": query,
-        "size": size,
+        "size": min(size, 50),
         "sort": "desc",
         "sort_type": "created_utc"
     }
+    headers = {"User-Agent": "airline-sentiment-dashboard/0.1"}
+    
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()["data"]
         posts = []
