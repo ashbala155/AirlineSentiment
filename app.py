@@ -64,8 +64,8 @@ data = load_data()
 # ------------------- Page title -------------------
 #st.title("✈️ Sentiment Analysis of Tweets about US Airlines")
 st.markdown(  """
-    <div style="font-size:43px; font-weight:bold; color:#d62728; font-family:Montserrat;">
-        ✈️ SENTIMENT ANALYSIS Dashboard of tweets about US Airlines
+    <div style="font-size:33px; font-weight:bold; color:#d62728; font-family:Montserrat;">
+        ✈️ SENTIMENT ANALYSIS DASHBOARD Analysis of tweets about US Airlines
     </div>
     """,
     unsafe_allow_html=True)
