@@ -58,8 +58,7 @@ def load_data():
 data = load_data()
 
 # ------------------- Page title -------------------
-st.markdown('<h1 style="color:#d62728;">✈️ Sentiment Analysis of Tweets about US Airlines</h1>', unsafe_allow_html=True)st.sidebar.title("Sentiment Dashboard")
-st.markdown("Analyze sentiments of tweets with interactive charts and word clouds 🐦")
+st.title("✈️ Sentiment Analysis of Tweets about US Airlines")st.markdown("Analyze sentiments of tweets with interactive charts and word clouds 🐦")
 st.sidebar.markdown("Interactive dashboard to explore airline tweet sentiments.")
 
 # ------------------- Color palette -------------------
