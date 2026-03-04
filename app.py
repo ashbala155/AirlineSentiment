@@ -175,12 +175,12 @@ if selected_airlines:
         facet_col='airline_sentiment', labels={'airline_sentiment':'Tweets'},
         height=600, width=800,
         color_discrete_map=color_map,
-        subplot_titles=selected_airlines
     )
     fig_hist.update_layout(
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
+        title_text="Comparison of Sentiment per Selected Airline",
         title_font=dict(family="Montserrat", size=20, color="#1f77b4")
     )
     st.plotly_chart(fig_hist)
