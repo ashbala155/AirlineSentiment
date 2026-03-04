@@ -16,7 +16,11 @@ body {
 }
 
 /* Headers */
-h1, h2, h3, h4, h5, h6 {
+h1 {
+    font-family: 'Montserrat', sans-serif;
+    color: #d62728;  /* coral headers */
+}
+h2, h3, h4, h5, h6 {
     font-family: 'Montserrat', sans-serif;
     color: #ff6f61;  /* coral headers */
 }
