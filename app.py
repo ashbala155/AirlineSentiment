@@ -7,30 +7,41 @@ import plotly.graph_objects as go
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 
-# ------------------- Custom CSS for fonts & background -------------------
+# ------------------- Custom CSS for fonts & colorful background -------------------
 st.markdown("""
 <style>
 /* Page background */
 body {
-    background-color: #f5f5f5;
+    background-color: #fff8f0;  /* light cream */
 }
 
 /* Headers */
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Montserrat', sans-serif;
-    color: #1f77b4;
+    color: #ff6f61;  /* coral headers */
 }
 
-/* Sidebar background & font */
-[data-testid="stSidebar"] {
-    background-color: #e8f0fe;
-    font-family: 'Verdana', sans-serif;
-}
-
-/* Normal text */
+/* Body text */
 body, p, span {
     font-family: 'Verdana', sans-serif;
     color: #333333;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #ffe6e1;  /* pale pink */
+    font-family: 'Verdana', sans-serif;
+    color: #111111;
+}
+
+/* Sidebar headers */
+[data-testid="stSidebar"] h2 {
+    color: #ff6f61;
+}
+
+/* Links */
+a {
+    color: #ff6f61;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -52,8 +63,18 @@ st.sidebar.title("Sentiment Dashboard")
 st.markdown("Analyze sentiments of tweets with interactive charts and word clouds 🐦")
 st.sidebar.markdown("Interactive dashboard to explore airline tweet sentiments.")
 
-# ------------------- Sentiment colors -------------------
-color_map = {'positive':'#2ca02c', 'neutral':'#7f7f7f', 'negative':'#d62728'}
+# ------------------- Color palette -------------------
+color_map = {
+    'positive':'#2ca02c',   # green
+    'neutral':'#7f7f7f',    # gray
+    'negative':'#d62728',   # red
+    'US Airways':'#1f77b4',
+    'United':'#ff7f0e',
+    'American':'#2ca02c',
+    'Southwest':'#9467bd',
+    'Delta':'#8c564b',
+    'Virgin America':'#e377c2'
+}
 
 # ------------------- Sidebar: Random tweet -------------------
 st.sidebar.subheader("Show random tweet")
@@ -83,6 +104,8 @@ if not st.sidebar.checkbox("Hide sentiment chart", False):
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
+        title_font=dict(family="Montserrat", size=20, color="#ff6f61"),
+        title_text="Number of Tweets by Sentiment"
     )
     st.plotly_chart(fig)
 
@@ -107,17 +130,20 @@ if not st.sidebar.checkbox("Close airline chart", False, key='airline_checkbox')
     if airline_viz == 'Bar plot':
         st.subheader("Total number of tweets per airline")
         fig_air = px.bar(
-            airline_count, x='Airline', y='Tweets', color='Tweets', height=500
+            airline_count, x='Airline', y='Tweets', color='Airline', color_discrete_map=color_map, height=500
         )
     else:
         st.subheader("Total number of tweets per airline")
         fig_air = px.pie(
-            airline_count, values='Tweets', names='Airline'
+            airline_count, values='Tweets', names='Airline',
+            color='Airline', color_discrete_map=color_map
         )
     fig_air.update_layout(
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
+        title_font=dict(family="Montserrat", size=20, color="#ff6f61"),
+        title_text="Tweets per Airline"
     )
     st.plotly_chart(fig_air)
 
@@ -160,7 +186,11 @@ if selected_airlines:
                 ),
                 row=1, col=i+1
             )
-    fig_break.update_layout(height=600, width=300*len(selected_airlines))
+    fig_break.update_layout(
+        height=600, width=300*len(selected_airlines),
+        title_text="Breakdown of Sentiment per Selected Airline",
+        title_font=dict(family="Montserrat", size=20, color="#ff6f61")
+    )
     st.plotly_chart(fig_break)
 
 # ------------------- Histogram per airline sentiment -------------------
@@ -178,7 +208,8 @@ if selected_airlines:
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
-        
+        title_font=dict(family="Montserrat", size=20, color="#ff6f61"),
+        title_text="Histogram of Sentiment per Airline"
     )
     st.plotly_chart(fig_hist)
 
