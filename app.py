@@ -88,7 +88,6 @@ sentiment_count = data['airline_sentiment'].value_counts()
 sentiment_count = pd.DataFrame({'Sentiment':sentiment_count.index, 'Tweets':sentiment_count.values})
 
 if not st.sidebar.checkbox("Hide sentiment chart", False):
-    st.markdown("### Number of tweets by sentiment")
     if select_viz == 'Bar plot':
         fig = px.bar(
             sentiment_count, x='Sentiment', y='Tweets', 
@@ -105,7 +104,7 @@ if not st.sidebar.checkbox("Hide sentiment chart", False):
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
         title_font=dict(family="Montserrat", size=20, color="#ff6f61"),
-        title_text="Number of Tweets by Sentiment"
+        title_text="NUMBER OF TWEETS BY SENTIMENT"
     )
     st.plotly_chart(fig)
 
@@ -142,7 +141,7 @@ if not st.sidebar.checkbox("Close airline chart", False, key='airline_checkbox')
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
         title_font=dict(family="Montserrat", size=20, color="#ff6f61"),
-        title_text="Tweets per Airline"
+        title_text="TOTAL NUMBER OF TWEETS PER AIRLINE"
     )
     st.plotly_chart(fig_air)
 
@@ -157,7 +156,6 @@ selected_airlines = st.sidebar.multiselect(
     'Pick airlines', ('US Airways','United','American','Southwest','Delta','Virgin America')
 )
 if selected_airlines:
-    st.subheader("Breakdown of airline by sentiment")
     breakdown_type = st.sidebar.selectbox('Visualization type', ['Pie chart', 'Bar plot'], key='breakdown_type')
     fig_break = make_subplots(
         rows=1, cols=len(selected_airlines),
@@ -186,7 +184,7 @@ if selected_airlines:
             )
     fig_break.update_layout(
         height=600, width=300*len(selected_airlines),
-        title_text="Breakdown of Sentiment per Selected Airline",
+        title_text="BREAKDOWN OF SENTIMENT PER SELECTED AIRLINE",
         title_font=dict(family="Montserrat", size=20, color="#ff6f61")
     )
     st.plotly_chart(fig_break)
@@ -206,7 +204,7 @@ if selected_airlines:
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
         title_font=dict(family="Montserrat", size=20, color="#ff6f61"),
-        title_text="Comparison of airlines by sentiment"
+        title_text="COMPARISON OF AIRLINES BY SENTIMENT"
     )
     st.plotly_chart(fig_hist)
 
