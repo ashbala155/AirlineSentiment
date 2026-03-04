@@ -1,5 +1,7 @@
 streamlit
-tweepy
+pandas
 plotly
+tweepy
+python-dotenv
 wordcloud
 matplotlib
