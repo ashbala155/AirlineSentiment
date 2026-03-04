@@ -130,12 +130,12 @@ def plot_sentiment(airline):
     count = df['airline_sentiment'].value_counts()
     return pd.DataFrame({'Sentiment':count.index, 'Tweets':count.values})
 
-st.sidebar.subheader("Breakdown airline by sentiment")
+st.sidebar.subheader("Breakdown of airline by sentiment")
 selected_airlines = st.sidebar.multiselect(
     'Pick airlines', ('US Airways','United','American','Southwest','Delta','Virgin America')
 )
 if selected_airlines:
-    st.subheader("Breakdown airline by sentiment")
+    st.subheader("Breakdown of airline by sentiment")
     breakdown_type = st.sidebar.selectbox('Visualization type', ['Pie chart', 'Bar plot'], key='breakdown_type')
     fig_break = make_subplots(
         rows=1, cols=len(selected_airlines),
@@ -167,6 +167,7 @@ if selected_airlines:
 
 # ------------------- Histogram per airline sentiment -------------------
 if selected_airlines:
+    st.subheader("Comparison of airlines by sentiment")
     choice_data = data[data.airline.isin(selected_airlines)]
     fig_hist = px.histogram(
         choice_data, x='airline', y='airline_sentiment',
