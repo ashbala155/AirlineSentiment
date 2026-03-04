@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 # CONFIG
 # ---------------------------------------------------
 st.set_page_config(
-    page_title="Airline Sentiment Dashboard (Pushshift)",
+    page_title="Airline Sentiment Dashboard (Reddit JSON)",
     page_icon="✈️",
     layout="wide"
 )
@@ -32,27 +32,28 @@ NEGATIVE_WORDS = {
 # FUNCTIONS
 # ---------------------------------------------------
 @st.cache_data(ttl=300)
-def fetch_reddit_pushshift(subreddit: str, query: str, size: int = 50):
-    """Fetch recent Reddit posts using Pushshift API."""
-    url = "https://api.pushshift.io/reddit/search/submission/"
+def fetch_reddit_posts(subreddit: str, query: str, limit: int = 50):
+    """Fetch recent Reddit posts using the public JSON endpoint."""
+    url = f"https://www.reddit.com/r/{subreddit}/search.json"
     params = {
-        "subreddit": subreddit,
         "q": query,
-        "size": min(size, 50),  # Pushshift recommends <=50 per request
-        "sort": "desc",
-        "sort_type": "created_utc"
+        "limit": limit,
+        "sort": "new",
+        "restrict_sr": "on"
     }
     headers = {"User-Agent": "airline-sentiment-dashboard/0.1"}
+    
     try:
         response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
-        data = response.json().get("data", [])
+        posts_data = response.json()["data"]["children"]
         posts = []
-        for item in data:
+        for post in posts_data:
+            p = post["data"]
             posts.append({
-                "title": item.get("title", ""),
-                "text": item.get("selftext", ""),
-                "created_at": datetime.fromtimestamp(item.get("created_utc", 0), tz=timezone.utc)
+                "title": p.get("title", ""),
+                "text": p.get("selftext", ""),
+                "created_at": datetime.fromtimestamp(p.get("created_utc", 0), tz=timezone.utc)
             })
         return pd.DataFrame(posts)
     except Exception as e:
@@ -95,7 +96,7 @@ def generate_wordcloud(text_series):
 st.sidebar.title("Controls")
 subreddit = st.sidebar.text_input("Subreddit", value="travel")
 search_query = st.sidebar.text_input("Search Keyword", value="airline")
-limit = st.sidebar.slider("Number of Posts", 10, 100, 50)
+limit = st.sidebar.slider("Number of Posts", 10, 50, 25)
 refresh = st.sidebar.button("🔄 Refresh")
 if refresh:
     st.cache_data.clear()
@@ -103,11 +104,11 @@ if refresh:
 # ---------------------------------------------------
 # MAIN APP
 # ---------------------------------------------------
-st.title("✈️ Airline Sentiment Dashboard (Pushshift)")
-st.markdown("Real-time-ish Reddit sentiment dashboard using Pushshift API.")
+st.title("✈️ Airline Sentiment Dashboard (Reddit JSON)")
+st.markdown("Live sentiment analysis of recent Reddit posts.")
 
 with st.spinner("Fetching Reddit posts..."):
-    data = fetch_reddit_pushshift(subreddit, search_query, limit)
+    data = fetch_reddit_posts(subreddit, search_query, limit)
 
 if data.empty:
     st.warning("No posts found.")
