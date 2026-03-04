@@ -180,7 +180,7 @@ if selected_airlines:
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
-        )
+        
     )
     st.plotly_chart(fig_hist)
 
