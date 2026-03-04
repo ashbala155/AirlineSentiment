@@ -128,7 +128,6 @@ airline_count = pd.DataFrame({'Airline':airline_count.index, 'Tweets':airline_co
 
 if not st.sidebar.checkbox("Close airline chart", False, key='airline_checkbox'):
     if airline_viz == 'Bar plot':
-        st.subheader("Total number of tweets per airline")
         fig_air = px.bar(
             airline_count, x='Airline', y='Tweets', color='Airline', color_discrete_map=color_map, height=500
         )
@@ -154,7 +153,6 @@ def plot_sentiment(airline):
     count = df['airline_sentiment'].value_counts()
     return pd.DataFrame({'Sentiment':count.index, 'Tweets':count.values})
 
-st.sidebar.subheader("Breakdown of airline by sentiment")
 selected_airlines = st.sidebar.multiselect(
     'Pick airlines', ('US Airways','United','American','Southwest','Delta','Virgin America')
 )
@@ -195,7 +193,6 @@ if selected_airlines:
 
 # ------------------- Histogram per airline sentiment -------------------
 if selected_airlines:
-    st.subheader("Comparison of airlines by sentiment")
     choice_data = data[data.airline.isin(selected_airlines)]
     fig_hist = px.histogram(
         choice_data, x='airline', y='airline_sentiment',
@@ -209,7 +206,7 @@ if selected_airlines:
         plot_bgcolor='white',
         font=dict(family="Verdana", size=14, color="#333333"),
         title_font=dict(family="Montserrat", size=20, color="#ff6f61"),
-        title_text="Histogram of Sentiment per Airline"
+        title_text="Comparison of airlines by sentiment"
     )
     st.plotly_chart(fig_hist)
 
