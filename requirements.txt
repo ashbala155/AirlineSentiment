@@ -1,4 +1,5 @@
 streamlit
+tweepy
 plotly
 wordcloud
 matplotlib
