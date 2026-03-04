@@ -38,16 +38,15 @@ def fetch_reddit_pushshift(subreddit: str, query: str, size: int = 50):
     params = {
         "subreddit": subreddit,
         "q": query,
-        "size": min(size, 50),
+        "size": min(size, 50),  # Pushshift recommends <=50 per request
         "sort": "desc",
         "sort_type": "created_utc"
     }
     headers = {"User-Agent": "airline-sentiment-dashboard/0.1"}
-    
     try:
         response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
-        data = response.json()["data"]
+        data = response.json().get("data", [])
         posts = []
         for item in data:
             posts.append({
@@ -55,8 +54,7 @@ def fetch_reddit_pushshift(subreddit: str, query: str, size: int = 50):
                 "text": item.get("selftext", ""),
                 "created_at": datetime.fromtimestamp(item.get("created_utc", 0), tz=timezone.utc)
             })
-        df = pd.DataFrame(posts)
-        return df
+        return pd.DataFrame(posts)
     except Exception as e:
         st.error(f"Error fetching posts: {e}")
         return pd.DataFrame(columns=["title", "text", "created_at"])
@@ -132,7 +130,13 @@ col3.metric("Negative", (data["sentiment"] == "negative").sum())
 st.subheader("Sentiment Distribution")
 sentiment_counts = data["sentiment"].value_counts().reset_index()
 sentiment_counts.columns = ["Sentiment", "Count"]
-fig_bar = px.bar(sentiment_counts, x="Sentiment", y="Count", color="Sentiment", title="Sentiment Breakdown")
+fig_bar = px.bar(
+    sentiment_counts,
+    x="Sentiment",
+    y="Count",
+    color="Sentiment",
+    title="Sentiment Breakdown"
+)
 st.plotly_chart(fig_bar, use_container_width=True)
 
 # ---------------------------------------------------
@@ -141,14 +145,23 @@ st.plotly_chart(fig_bar, use_container_width=True)
 st.subheader("Post Activity Over Time")
 data["hour"] = data["created_at"].dt.hour
 time_dist = data.groupby("hour").size().reset_index(name="count")
-fig_time = px.line(time_dist, x="hour", y="count", markers=True, title="Posts by Hour")
+fig_time = px.line(
+    time_dist,
+    x="hour",
+    y="count",
+    markers=True,
+    title="Posts by Hour"
+)
 st.plotly_chart(fig_time, use_container_width=True)
 
 # ---------------------------------------------------
 # WORD CLOUD
 # ---------------------------------------------------
 st.subheader("Word Cloud by Sentiment")
-selected_sentiment = st.selectbox("Choose Sentiment", ["positive", "neutral", "negative"])
+selected_sentiment = st.selectbox(
+    "Choose Sentiment",
+    ["positive", "neutral", "negative"]
+)
 filtered_text = data[data["sentiment"] == selected_sentiment]["combined_text"]
 if not filtered_text.empty:
     fig_wc = generate_wordcloud(filtered_text)
